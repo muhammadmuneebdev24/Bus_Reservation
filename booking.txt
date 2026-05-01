@@ -1,0 +1,7 @@
+Name: sds
+Your phone number is : sd
+your age is : 2
+Number of Seats: 3
+Price per Seat: 2000 PKR
+Total Price: 6000 PKR
+--------------------------
