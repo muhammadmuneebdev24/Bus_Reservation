@@ -1,6 +1,6 @@
 # Passenger Booking System (SFML)
 
-A modern, graphical C++ application for managing passenger bookings, built using the **SFML (Simple and Fast Multimedia Library)**. This system provides a step-by-step workflow for selecting seats, choosing routes, and entering passenger information.
+A modern, graphical C++ application for managing passenger bookings, built using the **SFML (Simple and Fast Multimedia Library)**. This system features a professional 24-seat bus-style layout with an aisle, providing a step-by-step workflow for selecting seats, choosing routes, and entering passenger information.
 
 ![App Preview](booking_system_preview.png)
 

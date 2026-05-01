@@ -9,94 +9,99 @@
 // Returns true when user clicks NEXT, false if window closed
 inline bool seatScreen(sf::RenderWindow& win, const sf::Font& font, Passenger& p) {
 
-    const int TOTAL = 10;
-    // 0 = free, 1 = already reserved, 2 = picked by user
-    int seat[TOTAL] = {0,0,0,0,1, 0,0,0,1,0};
+    const int ROWS = 6;
+    const int COLS = 4;
+    const int TOTAL = ROWS * COLS;
+    
+    // 0 = free, 1 = reserved, 2 = selected
+    static int seatStates[24] = {
+        0,0,1,0, 
+        0,1,0,0, 
+        0,0,0,0, 
+        1,0,0,1, 
+        0,0,1,0, 
+        0,0,0,0
+    };
 
     while (win.isOpen()) {
-
-        // ── Handle events ──
         while (auto event = win.pollEvent()) {
             if (event->is<sf::Event::Closed>()) { win.close(); return false; }
 
             if (auto* click = event->getIf<sf::Event::MouseButtonPressed>()) {
                 sf::Vector2i m = {click->position.x, click->position.y};
 
-                // Click on a seat to toggle it
+                // Check seats
                 for (int i = 0; i < TOTAL; i++) {
-                    float sx = 80 + (i % 5) * 120.f;
-                    float sy = 220 + (i / 5) * 120.f;
-                    if (mouseIn(m, sx, sy, 90, 80) && seat[i] != 1) {
-                        seat[i] = (seat[i] == 0) ? 2 : 0;
+                    int row = i / COLS;
+                    int col = i % COLS;
+                    float sx = 200 + col * 90 + (col >= 2 ? 40 : 0); // Aisle after 2nd column
+                    float sy = 120 + row * 60;
+                    
+                    if (mouseIn(m, sx, sy, 70, 50) && seatStates[i] != 1) {
+                        seatStates[i] = (seatStates[i] == 0) ? 2 : 0;
                     }
                 }
 
-                // Click NEXT button
-                if (mouseIn(m, 540, 520, 200, 50)) {
+                // NEXT button
+                if (mouseIn(m, 300, 520, 200, 50)) {
                     int count = 0;
-                    for (int i = 0; i < TOTAL; i++) if (seat[i] == 2) count++;
+                    for (int i = 0; i < TOTAL; i++) if (seatStates[i] == 2) count++;
                     if (count > 0) { p.numSeats = count; return true; }
                 }
             }
         }
 
         sf::Vector2i mouse = sf::Mouse::getPosition(win);
+        int selectedCount = 0;
+        for (int i = 0; i < TOTAL; i++) if (seatStates[i] == 2) selectedCount++;
 
-        // Count how many seats are selected
-        int selected = 0;
-        for (int i = 0; i < TOTAL; i++) if (seat[i] == 2) selected++;
-
-        // ── Draw everything ──
-        win.clear(BG_DARK);
+        win.clear(sf::Color(18, 18, 24)); // Deep dark background
 
         // Header
-        drawBox(win, 0, 0, 800, 80, BG_PANEL);
-        drawCentered(win, font, "SELECT YOUR SEATS", 22, 30, BLUE);
-        drawBox(win, 50, 78, 700, 2, BLUE);
+        drawBox(win, 0, 0, 800, 70, sf::Color(30, 30, 40));
+        drawCentered(win, font, "CHOOSE YOUR SEATS", 24, 20, sf::Color(0, 150, 255));
 
         // Legend
-        drawBox(win, 80, 110, 18, 18, SEAT_FREE);
-        drawText(win, font, "Available", 105, 108, 14, GRAY);
-        drawBox(win, 220, 110, 18, 18, RED);
-        drawText(win, font, "Reserved",  245, 108, 14, GRAY);
-        drawBox(win, 360, 110, 18, 18, BLUE);
-        drawText(win, font, "Your Pick", 385, 108, 14, GRAY);
+        float legX = 180;
+        drawBox(win, legX, 85, 15, 15, sf::Color(60, 60, 70)); 
+        drawText(win, font, "Available", legX + 25, 83, 14, GRAY);
+        
+        drawBox(win, legX + 130, 85, 15, 15, sf::Color(220, 60, 60)); 
+        drawText(win, font, "Reserved", legX + 155, 83, 14, GRAY);
+        
+        drawBox(win, legX + 260, 85, 15, 15, sf::Color(0, 150, 255)); 
+        drawText(win, font, "Selected", legX + 285, 83, 14, GRAY);
 
-        drawText(win, font, "Click on a seat to select / deselect it", 80, 155, 15, GRAY);
-
-        // Draw each seat as a colored box
+        // Draw Seats Grid
         for (int i = 0; i < TOTAL; i++) {
-            float sx = 80 + (i % 5) * 120.f;
-            float sy = 220 + (i / 5) * 120.f;
+            int row = i / COLS;
+            int col = i % COLS;
+            float sx = 200 + col * 90 + (col >= 2 ? 40 : 0);
+            float sy = 120 + row * 60;
 
-            // Pick color
-            sf::Color c = SEAT_FREE;
-            if (seat[i] == 1) c = RED;
-            if (seat[i] == 2) c = BLUE;
-            if (seat[i] == 0 && mouseIn(mouse, sx, sy, 90, 80)) c = SEAT_HOVER;
+            sf::Color baseColor = sf::Color(60, 60, 75); // Default
+            if (seatStates[i] == 1) baseColor = sf::Color(180, 50, 50); // Reserved
+            if (seatStates[i] == 2) baseColor = sf::Color(0, 120, 220); // Selected
+            
+            // Hover effect
+            if (seatStates[i] != 1 && mouseIn(mouse, sx, sy, 70, 50)) {
+                baseColor.r += 30; baseColor.g += 30; baseColor.b += 30;
+            }
 
-            drawBox(win, sx, sy, 90, 80, c, sf::Color(c.r-20, c.g-20, c.b-20), 2);
-
-            // Seat number (X if reserved)
-            string label = (seat[i] == 1) ? "X" : to_string(i + 1);
-            sf::Text txt(font, label, 24);
-            txt.setFillColor(WHITE);
-            float tw = txt.getLocalBounds().size.x;
-            txt.setPosition({sx + (90 - tw) / 2, sy + 22});
-            win.draw(txt);
+            // Draw seat shape (Rounded-ish rectangle)
+            drawBox(win, sx, sy, 70, 50, baseColor, sf::Color(baseColor.r/2, baseColor.g/2, baseColor.b/2), 2);
+            
+            // Seat Identifier
+            drawText(win, font, to_string(row+1) + (char)('A'+col), sx + 22, sy + 12, 18, WHITE);
         }
 
-        // Bottom bar
-        drawBox(win, 0, 490, 800, 110, BG_PANEL);
-        drawText(win, font, "Selected: " + to_string(selected) + " seat(s)",
-                 80, 510, 20, selected > 0 ? GREEN : GRAY);
-        if (selected == 0)
-            drawText(win, font, "Please select at least 1 seat", 80, 540, 14, YELLOW);
-
-        // NEXT button
-        sf::Color btnC = mouseIn(mouse, 540, 520, 200, 50) ? sf::Color(60,220,140) : GREEN;
-        drawBox(win, 540, 520, 200, 50, btnC);
-        drawText(win, font, "NEXT  >>", 595, 530, 18, WHITE);
+        // Footer / Button
+        drawBox(win, 0, 500, 800, 100, sf::Color(30, 30, 40));
+        drawText(win, font, "Seats Selected: " + to_string(selectedCount), 100, 530, 20, sf::Color(0, 200, 150));
+        
+        sf::Color btnColor = mouseIn(mouse, 500, 520, 200, 50) ? sf::Color(0, 180, 255) : sf::Color(0, 120, 200);
+        drawBox(win, 500, 520, 200, 50, btnColor);
+        drawText(win, font, "CONFIRM NEXT", 540, 532, 16, WHITE);
 
         win.display();
     }
