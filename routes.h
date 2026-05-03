@@ -7,7 +7,7 @@
 
 // Shows route cards with Pakistan cities, user picks one
 // Returns true when user clicks NEXT, false if window closed
-inline bool routeScreen(sf::RenderWindow& win, const sf::Font& font, Passenger& p) {
+inline int routeScreen(sf::RenderWindow& win, const sf::Font& font, Passenger& p) {
 
     int selected = -1;   // which route is picked (-1 = none)
     int scroll   = 0;    // scroll offset
@@ -16,7 +16,7 @@ inline bool routeScreen(sf::RenderWindow& win, const sf::Font& font, Passenger& 
     while (win.isOpen()) {
 
         while (auto event = win.pollEvent()) {
-            if (event->is<sf::Event::Closed>()) { win.close(); return false; }
+            if (event->is<sf::Event::Closed>()) { win.close(); return 0; }
 
             if (auto* click = event->getIf<sf::Event::MouseButtonPressed>()) {
                 sf::Vector2i m = {click->position.x, click->position.y};
@@ -34,10 +34,20 @@ inline bool routeScreen(sf::RenderWindow& win, const sf::Font& font, Passenger& 
                 if (mouseIn(m, 370, 555, 60, 30) && scroll + visible < TOTAL_ROUTES)
                     scroll++;
 
+                // BACK button
+                if (mouseIn(m, 30, 535, 120, 50)) {
+                    return -1;
+                }
+
+                // CANCEL button
+                if (mouseIn(m, 160, 535, 120, 50)) {
+                    return 2;
+                }
+
                 // NEXT button
                 if (mouseIn(m, 540, 535, 200, 50) && selected >= 0) {
                     p.routeIndex = selected;
-                    return true;
+                    return 1;
                 }
             }
         }
@@ -104,11 +114,22 @@ inline bool routeScreen(sf::RenderWindow& win, const sf::Font& font, Passenger& 
 
         // Bottom bar
         drawBox(win, 0, 510, 800, 90, BG_PANEL);
+
+        // BACK button
+        sf::Color backC = mouseIn(mouse, 30, 535, 120, 50) ? sf::Color(100, 100, 120) : DARK_GRAY;
+        drawBox(win, 30, 535, 120, 50, backC);
+        drawText(win, font, "<< BACK", 55, 545, 18, WHITE);
+
+        // CANCEL button
+        sf::Color cancelC = mouseIn(mouse, 160, 535, 120, 50) ? sf::Color(200, 60, 60) : sf::Color(150, 40, 40);
+        drawBox(win, 160, 535, 120, 50, cancelC);
+        drawText(win, font, "CANCEL", 188, 545, 18, WHITE);
+
         if (selected < 0)
-            drawText(win, font, "Please select a route", 80, 545, 15, YELLOW);
+            drawText(win, font, "Select a route", 300, 545, 15, YELLOW);
         else
-            drawText(win, font, "Selected: " + routes[selected].from + " -> " + routes[selected].to,
-                     80, 545, 15, GREEN);
+            drawText(win, font, routes[selected].from + " -> " + routes[selected].to,
+                     300, 545, 15, GREEN);
 
         // NEXT button
         sf::Color btnC = mouseIn(mouse, 540, 535, 200, 50) ? sf::Color(60,220,140) : GREEN;
@@ -117,7 +138,7 @@ inline bool routeScreen(sf::RenderWindow& win, const sf::Font& font, Passenger& 
 
         win.display();
     }
-    return false;
+    return 0;
 }
 
 #endif

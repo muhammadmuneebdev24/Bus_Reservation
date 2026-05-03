@@ -16,11 +16,32 @@ int main() {
     if (!font.openFromFile("C:/Windows/Fonts/arial.ttf")) return -1;
 
     Passenger passenger;
+    int state = 0; // 0: Seats, 1: Routes, 2: Info, 3: Confirm
 
-    if (!seatScreen(window, font, passenger))  return 0;
-    if (!routeScreen(window, font, passenger)) return 0;
-    if (!infoScreen(window, font, passenger))  return 0;
-    confirmScreen(window, font, passenger);
+    while (window.isOpen()) {
+        if (state == 0) {
+            int res = seatScreen(window, font, passenger);
+            if (res == 1) state = 1;
+            else if (res == 2 || res == 0) break; // Cancel or Closed
+        } 
+        else if (state == 1) {
+            int res = routeScreen(window, font, passenger);
+            if (res == 1) state = 2;
+            else if (res == -1) state = 0;
+            else if (res == 2 || res == 0) break; // Cancel or Closed
+        } 
+        else if (state == 2) {
+            int res = infoScreen(window, font, passenger);
+            if (res == 1) state = 3;
+            else if (res == -1) state = 1;
+            else if (res == 2 || res == 0) break; // Cancel or Closed
+        } 
+        else if (state == 3) {
+            int res = confirmScreen(window, font, passenger);
+            if (res == -1) state = 2; // Go back to Info
+            else break; // Exit
+        }
+    }
 
     return 0;
 }
